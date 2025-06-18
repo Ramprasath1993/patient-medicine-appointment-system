@@ -1,6 +1,6 @@
 # Stage 1: Build the Spring Boot application
 # Use Maven and OpenJDK 17 to build the project
-FROM maven:3.8.7-openjdk-17 AS build
+FROM maven:3.9.6-openjdk-17 AS build # <--- CHANGED THIS LINE to a more recent and likely available tag
 
 # Set the working directory inside the container
 WORKDIR /app

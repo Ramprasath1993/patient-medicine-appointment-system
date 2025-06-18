@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Prescriptions</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="navbar">
+    <a href="dashboard.html">Dashboard</a>
+    <a href="book-appointment.html">Book Appointment</a>
+    <a href="view-medications.html">View Medications</a>
+    <a href="view-prescriptions.html" class="active">View Prescriptions</a>
+    <a href="#" id="logoutButton" class="logout-btn">Logout</a>
+</div>
+
+<div class="container">
+    <div class="card">
+        <h2>My Prescriptions</h2>
+        <div id="prescriptionsList" class="prescriptions-list">
+            <p>Loading prescriptions...</p>
+        </div>
+        <p id="message" class="message"></p>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="script.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const prescriptionsListDiv = document.getElementById('prescriptionsList');
+        const messageDiv = document.getElementById('message');
+        const logoutButton = document.getElementById('logoutButton');
+
+        // Check session on page load
+        checkSessionAndRedirect('/api/auth/check-session', 'index.html');
+
+        // Fetch prescriptions
+        fetchPrescriptions();
+
+        async function fetchPrescriptions() {
+            try {
+                const response = await axios.get('/api/prescriptions/my-prescriptions', { withCredentials: true });
+                const prescriptions = response.data;
+                if (prescriptions.length > 0) {
+                    prescriptionsListDiv.innerHTML = ''; // Clear loading message
+                    prescriptions.forEach(pres => {
+                        const presDiv = document.createElement('div');
+                        presDiv.className = 'prescription-item';
+                        presDiv.innerHTML = `
+                                <h3>${pres.medicationName}</h3>
+                                <p><strong>Dosage:</strong> ${pres.dosage}</p>
+                                <p><strong>Frequency:</strong> ${pres.frequency}</p>
+                                <p><strong>Period:</strong> ${pres.startDate} to ${pres.endDate || 'Ongoing'}</p>
+                                <p>${pres.notes || 'No notes.'}</p>
+                            `;
+                        prescriptionsListDiv.appendChild(presDiv);
+                    });
+                } else {
+                    prescriptionsListDiv.innerHTML = '<p>No prescriptions found.</p>';
+                }
+            } catch (error) {
+                const errorMessage = error.response && error.response.data ? (typeof error.response.data === 'object' ? JSON.stringify(error.response.data) : error.response.data) : 'Failed to load prescriptions.';
+                messageDiv.textContent = errorMessage;
+                messageDiv.style.color = 'red';
+                prescriptionsListDiv.innerHTML = '<p>Could not load prescriptions. Please log in again.</p>';
+            }
+        }
+
+        logoutButton.addEventListener('click', async (event) => {
+            event.preventDefault();
+            await handleLogout('/api/auth/logout', 'index.html');
+        });
+    });
+</script>
+</body>
+</html>

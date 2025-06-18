@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="navbar">
+    <a href="#" class="active">Dashboard</a>
+    <a href="book-appointment.html">Book Appointment</a>
+    <a href="view-medications.html">View Medications</a>
+    <a href="view-prescriptions.html">View Prescriptions</a> <!-- NEW LINK -->
+    <a href="#" id="logoutButton" class="logout-btn">Logout</a>
+</div>
+
+<div class="container">
+    <div class="card">
+        <h2 id="welcomeMessage">Welcome, Patient!</h2>
+        <p>Use the navigation bar above to manage your appointments, view medications, and prescriptions.</p>
+        <div class="dashboard-links">
+            <a href="book-appointment.html" class="btn">Book New Appointment</a>
+            <a href="view-medications.html" class="btn">View Available Medications</a>
+            <a href="view-prescriptions.html" class="btn">View My Prescriptions</a> <!-- NEW LINK -->
+        </div>
+        <h3>Your Upcoming Appointments</h3>
+        <div id="appointmentsList" class="appointments-list">
+            <p>Loading appointments...</p>
+        </div>
+        <p id="appointmentMessage" class="message"></p>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="script.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const welcomeMessage = document.getElementById('welcomeMessage');
+        const logoutButton = document.getElementById('logoutButton');
+        const appointmentsListDiv = document.getElementById('appointmentsList');
+        const appointmentMessageDiv = document.getElementById('appointmentMessage');
+
+        // Check session on page load
+        checkSessionAndRedirect('/api/auth/check-session', 'index.html', (data) => {
+            const username = data.username;
+            if (username) {
+                welcomeMessage.textContent = `Welcome, ${username}!`;
+            }
+            fetchAppointments(); // Fetch appointments only after session is confirmed
+        });
+
+        async function fetchAppointments() {
+            try {
+                const response = await axios.get('/api/appointments/my-appointments', { withCredentials: true });
+                const appointments = response.data;
+                if (appointments.length > 0) {
+                    appointmentsListDiv.innerHTML = ''; // Clear loading message
+                    appointments.forEach(app => {
+                        const appDiv = document.createElement('div');
+                        appDiv.className = 'appointment-item';
+                        appDiv.innerHTML = `
+                                <strong>Date:</strong> ${app.appointmentDate}<br>
+                                <strong>Time:</strong> ${app.appointmentTime}<br>
+                                <strong>Doctor:</strong> ${app.doctorName} (${app.doctorSpecialty || 'N/A'})<br>
+                                <strong>Reason:</strong> ${app.reason}<br>
+                                <strong>Status:</strong> <span class="status-${app.status.toLowerCase()}">${app.status}</span>
+                            `;
+                        appointmentsListDiv.appendChild(appDiv);
+                    });
+                } else {
+                    appointmentsListDiv.innerHTML = '<p>No upcoming appointments.</p>';
+                }
+            } catch (error) {
+                const errorMessage = error.response && error.response.data ? (typeof error.response.data === 'object' ? JSON.stringify(error.response.data) : error.response.data) : 'Failed to load appointments.';
+                appointmentMessageDiv.textContent = errorMessage;
+                appointmentMessageDiv.style.color = 'red';
+                appointmentsListDiv.innerHTML = '<p>Could not load appointments. Please log in again.</p>';
+            }
+        }
+
+        logoutButton.addEventListener('click', async (event) => {
+            event.preventDefault();
+            await handleLogout('/api/auth/logout', 'index.html');
+        });
+    });
+</script>
+</body>
+</html>

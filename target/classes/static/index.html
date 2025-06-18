@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient System - Login</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="navbar">
+    <a href="index.html" class="active">Login</a>
+    <a href="register.html">Register</a>
+</div>
+
+<div class="container">
+    <div class="card">
+        <h2>Login</h2>
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <button type="submit" class="btn">Login</button>
+        </form>
+        <p id="message" class="message"></p>
+        <p class="mt-20">Don't have an account? <a href="register.html">Register here</a></p>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="script.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const loginForm = document.getElementById('loginForm');
+        const messageDiv = document.getElementById('message');
+
+        loginForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const username = loginForm.username.value;
+            const password = loginForm.password.value;
+
+            try {
+                const response = await axios.post('/api/auth/login', { username, password }, { withCredentials: true });
+                // Parse the JSON response
+                const data = response.data;
+                messageDiv.textContent = data.message;
+                messageDiv.style.color = 'green';
+
+                // Store user ID and username from the JSON response
+                sessionStorage.setItem('userId', data.userId);
+                sessionStorage.setItem('username', data.username);
+
+                window.location.href = 'dashboard.html'; // Redirect to dashboard
+            } catch (error) {
+                const errorMessage = error.response && error.response.data ? error.response.data : 'An unexpected error occurred.';
+                // If error.response.data is an object (from the backend's JSON error response), display a generic message.
+                // If it's a string, display that string.
+                messageDiv.textContent = typeof errorMessage === 'object' ? 'Login failed: Invalid credentials.' : errorMessage;
+                messageDiv.style.color = 'red';
+            }
+        });
+    });
+</script>
+</body>
+</html>

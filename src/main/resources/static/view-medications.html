@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>View Medications</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="navbar">
+    <a href="dashboard.html">Dashboard</a>
+    <a href="book-appointment.html">Book Appointment</a>
+    <a href="view-medications.html" class="active">View Medications</a>
+    <a href="#" id="logoutButton" class="logout-btn">Logout</a>
+</div>
+
+<div class="container">
+    <div class="card">
+        <h2>Available Medications</h2>
+        <div id="medicationsList" class="medications-list">
+            <p>Loading medications...</p>
+        </div>
+        <p id="message" class="message"></p>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="script.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const medicationsListDiv = document.getElementById('medicationsList');
+        const messageDiv = document.getElementById('message');
+        const logoutButton = document.getElementById('logoutButton');
+
+        // Check session on page load
+        checkSessionAndRedirect('/api/auth/check-session', 'index.html');
+
+        // Fetch medications
+        fetchMedications();
+
+        async function fetchMedications() {
+            try {
+                const response = await axios.get('/api/medications', { withCredentials: true });
+                const medications = response.data;
+                if (medications.length > 0) {
+                    medicationsListDiv.innerHTML = ''; // Clear loading message
+                    medications.forEach(med => {
+                        const medDiv = document.createElement('div');
+                        medDiv.className = 'medication-item';
+                        medDiv.innerHTML = `
+                                <h3>${med.name}</h3>
+                                <p><strong>Dosage:</strong> ${med.dosage}</p>
+                                <p>${med.description}</p>
+                            `;
+                        medicationsListDiv.appendChild(medDiv);
+                    });
+                } else {
+                    medicationsListDiv.innerHTML = '<p>No medications found.</p>';
+                }
+            } catch (error) {
+                const errorMessage = error.response && error.response.data ? error.response.data : 'Failed to load medications.';
+                messageDiv.textContent = errorMessage;
+                messageDiv.style.color = 'red';
+                medicationsListDiv.innerHTML = '<p>Could not load medications. Please log in again.</p>';
+            }
+        }
+
+        logoutButton.addEventListener('click', async (event) => {
+            event.preventDefault();
+            await handleLogout('/api/auth/logout', 'index.html');
+        });
+    });
+</script>
+</body>
+</html>

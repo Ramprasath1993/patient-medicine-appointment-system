@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Appointment</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="navbar">
+    <a href="dashboard.html">Dashboard</a>
+    <a href="book-appointment.html" class="active">Book Appointment</a>
+    <a href="view-medications.html">View Medications</a>
+    <a href="view-prescriptions.html">View Prescriptions</a>
+    <a href="#" id="logoutButton" class="logout-btn">Logout</a>
+</div>
+
+<div class="container">
+    <div class="card">
+        <h2>Book New Appointment</h2>
+        <form id="appointmentForm">
+            <div class="form-group">
+                <label for="doctor-select">Select Doctor:</label>
+                <select id="doctor-select" name="doctorId" required>
+                    <option value="">-- Select a Doctor --</option>
+                    <!-- Doctors will be loaded here by JavaScript -->
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="appointment-date">Date:</label>
+                <input type="date" id="appointment-date" name="appointmentDate" required>
+            </div>
+            <div class="form-group">
+                <label for="appointment-time">Time:</label>
+                <input type="time" id="appointment-time" name="appointmentTime" required>
+            </div>
+            <div class="form-group">
+                <label for="reason">Reason for Appointment:</label>
+                <textarea id="reason" name="reason" rows="4"></textarea>
+            </div>
+            <button type="submit" class="btn">Book Appointment</button>
+        </form>
+        <p id="message" class="message"></p>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script src="script.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const appointmentForm = document.getElementById('appointmentForm');
+        const messageDiv = document.getElementById('message');
+        const logoutButton = document.getElementById('logoutButton');
+        const doctorSelect = document.getElementById('doctor-select');
+
+        // Check session on page load
+        checkSessionAndRedirect('/api/auth/check-session', 'index.html');
+
+        // Fetch doctors on page load
+        fetchDoctors();
+
+        async function fetchDoctors() {
+            try {
+                const response = await axios.get('/api/doctors', { withCredentials: true });
+                const doctors = response.data;
+                doctors.forEach(doctor => {
+                    const option = document.createElement('option');
+                    option.value = doctor.id;
+                    option.textContent = `Dr. ${doctor.firstName} ${doctor.lastName} (${doctor.specialty})`;
+                    doctorSelect.appendChild(option);
+                });
+            } catch (error) {
+                const errorMessage = error.response && error.response.data ? (typeof error.response.data === 'object' ? JSON.stringify(error.response.data) : error.response.data) : 'Failed to load doctors.';
+                messageDiv.textContent = `Error loading doctors: ${errorMessage}`;
+                messageDiv.style.color = 'red';
+            }
+        }
+
+        appointmentForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const doctorId = doctorSelect.value;
+            const appointmentDate = appointmentForm['appointment-date'].value;
+            const appointmentTime = appointmentForm['appointment-time'].value;
+            const reason = appointmentForm.reason.value;
+
+            if (!doctorId) {
+                messageDiv.textContent = 'Please select a doctor.';
+                messageDiv.style.color = 'red';
+                return;
+            }
+
+            try {
+                const response = await axios.post('/api/appointments/book', {
+                    doctorId,
+                    appointmentDate,
+                    appointmentTime,
+                    reason
+                }, { withCredentials: true });
+                messageDiv.textContent = 'Appointment booked successfully!';
+                messageDiv.style.color = 'green';
+                appointmentForm.reset();
+                doctorSelect.value = ""; // Reset doctor selection
+                // Optionally redirect or show confirmation
+                setTimeout(() => {
+                    window.location.href = 'dashboard.html';
+                }, 2000);
+            } catch (error) {
+                const errorMessage = error.response && error.response.data ? (typeof error.response.data === 'object' ? JSON.stringify(error.response.data) : error.response.data) : 'Failed to book appointment.';
+                messageDiv.textContent = errorMessage;
+                messageDiv.style.color = 'red';
+            }
+        });
+
+        logoutButton.addEventListener('click', async (event) => {
+            event.preventDefault();
+            await handleLogout('/api/auth/logout', 'index.html');
+        });
+    });
+</script>
+</body>
+</html>
